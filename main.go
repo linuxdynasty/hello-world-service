@@ -32,10 +32,19 @@ func (w *statusCodeReporter) Write(b []byte) (int, error) {
 	return w.ResponseWriter.Write(b)
 }
 
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
+}
+
 func main() {
-	statsdExporter := os.Getenv("STATSD_EXPORTER")
+	statsdExporter := getEnv("STATSD_EXPORTER", "127.0.0.1:9125")
+	fmt.Println(statsdExporter)
 	statsWriter, err := statsd.UDP(statsdExporter)
 	if err != nil {
+		fmt.Println("Error happening: ", err)
 		panic(err)
 	}
 
@@ -70,12 +79,7 @@ func main() {
 	mux := http.DefaultServeMux
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, "Hello world from index")
-	})
-
-	mux.HandleFunc("/other", func(w http.ResponseWriter, r *http.Request) {
-		statsD.Unique("other.unique", 1)
-		fmt.Fprintln(w, "Hello from other page")
+		fmt.Fprintln(w, "Hello world")
 	})
 
 	http.ListenAndServe(":80", statsDMiddleware(mux))
